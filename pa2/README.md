@@ -2,7 +2,6 @@
   - Jaden Towey
   - Patricia Bivol
   - Anthony Ilchev
-  - Brady Fisher
 
 # Programming Assignment 2 (PA2): A General SAT Solver
 
