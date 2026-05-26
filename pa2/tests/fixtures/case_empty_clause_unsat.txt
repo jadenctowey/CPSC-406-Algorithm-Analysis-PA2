@@ -1,4 +1,0 @@
-=== INPUT ===
-[[]]
-=== EXPECTED ===
-satisfiable: false
