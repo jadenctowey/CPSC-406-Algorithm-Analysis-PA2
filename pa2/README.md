@@ -1,111 +1,133 @@
-# NAMES:
-  - Jaden Towey
-  - Patricia Bivol
-  - Anthony Ilchev
+# Names 
+- Patricia Bivol
+- Jaden Towey 
+- Anthony Ilchev 
 
-# Programming Assignment 2 (PA2): A General SAT Solver
+# Programming Assignment 3 (PA3): Sudoku via SAT
 
-This assignment generalizes PA1 from Horn formulas to arbitrary formulas. You will implement a SAT
-solver for general formulas in conjunctive normal form (CNF). This paves the way for PA3 in which you will use the SAT solver to implement a Sudoko solver.
+In this assignment you will use the SAT solver from PA2 to solve $9\times 9$ Sudoku puzzles.
 
 Work in groups of 2-4 people. Comment and document your code thoroughly.
 
-## File
+## Files
 
 Implement your solution in:
+
+```text
+sudoku_solver.py
+```
+
+Your `sudoku_solver.py` must use a SAT solver. You may copy your PA2
+implementation into:
 
 ```text
 sat_solver.py
 ```
 
-## Background
-
-For a given a boolean formula $\varphi(x_1,\ldots,x_n)$ we call an assignment
-$$\mathfrak J \colon \;\; x_1 \mapsto b_1, \;\; x_2 \mapsto b_2, \;\; \ldots \;\;x_n \mapsto b_n$$ 
-(with $b_1,\ldots,b_n \in \{0,1\}$) **satisfying** if $\mathfrak J(\varphi) = 1$.
-
-The **SAT problem** asks: is a boolean formula (in CNF) satisfiable? It was the first problem to be shown [NP-complete](https://en.wikipedia.org/wiki/NP-completeness).
-
-One can show that every boolean formula is equivalent to one in *conjunctive normal form (CNF)*, i.e., a conjunction of disjunctions of literals:
-
-$$\varphi \equiv (l_{11} \lor \ldots \lor l_{1k_{1}}) \land  (l_{21} \lor \ldots \lor l_{2k_{2}}) \land \ldots \land (l_{n1} \lor \ldots \lor l_{nk_{n}})$$
-A *literal* $l_{ij}$ is either a variable $x$ or the negation $\lnot x$ of a variable $x$. The subformulas $C_{m} = l_{m1} \lor \ldots \lor l_{mk_{m}}$ are called *clauses*. A *unit clause* is a clause $C$ consisting only of one literal (i.e. $C = x$ or $C = \lnot x$).
-
-A single clause can be represented by a set of its literals, hence every CNF (hence every formula) can be represented by a set of sets. E.g., the CNF
-$$\varphi(x_1,x_2) = (x_1 \lor \lnot x_2) \land \lnot x_1 $$
-can be represented by:
-$$\{ \{x_1, \lnot x_2\}, \{\lnot x_1\} \}$$
-
-**Remark:** For a more precise definition of CNFs in terms of context-free grammars see [Wikipedia](https://en.wikipedia.org/wiki/Conjunctive_normal_form). This in particular explains why a binary disjunction like $p \land q$ is itself also a *conjunctive* normal form!
-
-In this
-assignment, however, formulas are already given in CNF.
-
-We represent variables by positive integers:
-
-- `1` means variable $x_1$
-- `-1` means $\lnot x_1$
-- `[1, -2, 3]` means $x_1 \lor \lnot x_2 \lor x_3$
-- `[[1, -2], [-1]]` means $(x_1\lor\lnot x_2)\land(\lnot x_1)$
-
-An assignment is a dictionary mapping variable numbers to Boolean values:
-
-```python
-{1: True, 2: False}
-```
-
-## Required Function
+## Required Functions
 
 Implement:
 
 ```python
-def sat_solve(clauses, assignment):
+def sudoku_encode(grid):
+    ...
+
+def solve(grid):
     ...
 ```
 
 Input:
 
-- `clauses`: a list of clauses, where each clause is a list of integer literals
-- `assignment`: a dictionary mapping variables to truth values. In the tests
-  below, the tester calls your solver with the empty assignment `{}`.
+- `grid`: a list of 9 lists, each containing 9 integers
+- `0` means an empty cell
+- values `1` through `9` are given
 
 Output:
 
-- if the formula is satisfiable extending `assignment`, return a satisfying
-  assignment dictionary
-- otherwise return `None`
+- if the Sudoku puzzle is solvable, return a solved `9 x 9` grid
+- if it is unsolvable, return `None`
 
-## Hints
+## SAT Encoding
 
-Unit clauses force choices. For example, `[3]` forces `3: True`, and `[-4]`
-forces `4: False`.
+Use Boolean variables of the form:
 
-A reasonable implementation strategy is the following:
+```text
+cell (row, column) contains digit d
+```
 
-1. Simplify the formula under the current assignment.
-2. Apply unit propagation.
-3. If all clauses are satisfied, return the assignment.
-4. If an empty clause is produced, return `None`.
-5. Choose an unassigned variable and recursively try `True` and `False`.
+A common integer encoding is:
+
+```python
+varnum(row, col, digit) = 100 * row + 10 * col + digit
+```
+
+where `row`, `col`, and `digit` are in `{1, ..., 9}`.
+
+Your CNF encoding should enforce:
+
+1. Every cell contains at least one digit.
+2. Every cell contains at most one digit.
+3. Every digit appears in every row.
+4. Every digit appears in every column.
+5. Every digit appears in every `3 x 3` box.
+6. The given digits from the input grid are respected.
+
+Then call your SAT solver from PA2 on the resulting clauses. For the encoding, see also the corresponding [exercise](https://hackmd.io/@jweinberger/SkBvxPcCbg).
 
 ## Examples
 
-Your implementation should produce results equivalent to e.g. the following (the tests only check for satisfiable/unsatisfiable, not for a concrete assignment):
+Several test cases are typical:
 
-| Input | Output |
-| --- | --- |
-| `[[1, 2], [-1], [-2], [-1, -2]]` | `None` |
-| `[[1, 2], [-1], [2]]` | `{1: False, 2: True}` |
-| `[[1], [2], [3], [-4], [-5], [-6]]` | `{1: True, 2: True, 3: True, 4: False, 5: False, 6: False}` |
-| `[[1, -2], [-1, 2], [3], [-3, 4], [-4]]` | `None` |
+- a standard solvable Sudoku,
+- a sparse solvable Sudoku,
+- grids with contradictions that should return `None`.
+
+Your solutions will be tested on the given as well as possibly on additional puzzles. The tests only check for solvable/unsolvable, not for a concrete solution.
 
 You can run the solver file directly from the shell:
 
 ```bash
-python3 reference_sat_solver.py "[[1, 2], [-1], [2]]"
+python3 sudoku_solver.py "[
+        [5, 3, 0, 0, 7, 0, 0, 0, 0],
+        [6, 0, 0, 1, 9, 5, 0, 0, 0],
+        [0, 9, 8, 0, 0, 0, 0, 6, 0],
+        [8, 0, 0, 0, 6, 0, 0, 0, 3],
+        [4, 0, 0, 8, 0, 3, 0, 0, 1],
+        [7, 0, 0, 0, 2, 0, 0, 0, 6],
+        [0, 6, 0, 0, 0, 0, 2, 8, 0],
+        [0, 0, 0, 4, 1, 9, 0, 0, 5],
+        [0, 0, 0, 0, 8, 0, 0, 7, 9],
+    ]"
 ```
 
-Your solution may be tested on additional inputs.
+A solution here would be:
+```
+[5, 3, 4, 6, 7, 8, 9, 1, 2]
+[6, 7, 2, 1, 9, 5, 3, 4, 8]
+[1, 9, 8, 3, 4, 2, 5, 6, 7]
+[8, 5, 9, 7, 6, 1, 4, 2, 3]
+[4, 2, 6, 8, 5, 3, 7, 9, 1]
+[7, 1, 3, 9, 2, 4, 8, 5, 6]
+[9, 6, 1, 5, 3, 7, 2, 8, 4]
+[2, 8, 7, 4, 1, 9, 6, 3, 5]
+[3, 4, 5, 2, 8, 6, 1, 7, 9]
+```
+
+However, e.g., the following is unsolvable:
+
+```
+[
+    [5, 1, 6, 8, 4, 9, 7, 3, 2],
+    [3, 0, 7, 6, 0, 5, 0, 0, 0],
+    [8, 0, 9, 7, 0, 0, 0, 6, 5],
+    [1, 3, 5, 0, 6, 0, 9, 0, 7],
+    [4, 7, 2, 5, 9, 1, 0, 0, 6],
+    [9, 6, 8, 3, 7, 0, 0, 5, 0],
+    [2, 5, 3, 1, 8, 6, 0, 7, 4],
+    [6, 8, 4, 2, 0, 7, 5, 0, 0],
+    [7, 9, 1, 0, 5, 0, 6, 0, 8],
+]
+```
 
 ## Grading (15 points)
 
@@ -116,12 +138,10 @@ Grading breakdown:
 - **2 point**: maintaining directory and file structure
 - **2 point**: code quality (readable implementation, clear variable naming, no hard-coding)
 
-You are encouraged to add your own test cases. I maintain the right to use additional test cases for grading.
-
 ## Run Checks
 
-From the `pa2` directory:
+From the `pa3` directory, run:
 
 ```bash
-python3 tests/test_pa2.py --solution sat_solver.py
+python3 tests/test_pa3.py --solution sudoku_solver.py
 ```
